@@ -1379,20 +1379,20 @@ const ALL_QUESTIONS = [
     id: 78, text: "Ejercicio RS232: Se necesita realizar una transferencia de datos desde un DTE hacia un DCE a través del interface RS232. ¿Cuál sería el conexionado mínimo necesario que garantice dicha transferencia?",
     type: "single",
     options: ["Tx > RX / GND <> GND / SHIELD - SHIELD", "TX > TX / RX < RX / GND <> GND / SHIELD - SHIELD", "Tx > TX / GND <> GND / SHIELD - SHIELD", "Rx < Rx / GND <> GND / SHIELD - SHIELD"],
-    correct: [0]
+    correct: [2]
   },
   {
     id: 79, text: "Ejercicio RS232 con verificación DCE encendido: Se necesita realizar una transferencia de datos desde un DTE hacia un DCE verificando si el DCE se encuentra encendido, sin puesta a tierra certificada. ¿Cuál sería el conexionado mínimo?",
     type: "single",
     options: ["Tx > TX / RTS > RTS / CTS < CTS / GND <> GND", "Tx > RX / RTS > RTS / DSR < DSR / retorno - retorno / shield - shield", "TX > RX / RTS > RTS / DSR < DSR / retorno - retorno", "Tx > Rx / Rx < Rx / RTS > RTS / DSR < DSR / retorno - retorno / shield", "Tx / RTS > RTS / DSR < DSR / retorno - retorno"],
-    correct: [2]
+    correct: [0]
   },
   // === COMUNICACIONES INALÁMBRICAS ===
   {
     id: 80, text: "La eficiencia de la tecnología inalámbrica NFC radica en poseer una muy alta velocidad de transferencia de datos a corta distancia.",
     type: "tf",
     options: ["Verdadero", "Falso"],
-    correct: [0]
+    correct: [1]
   },
   {
     id: 81, text: "La tecnología Bluetooth se clasifica en: Versión (determina la potencia del transmisor) y Clase (determina la velocidad de transferencia de datos). Y opera en los rangos de frecuencia de 2.4GHz y 5GHz.",
@@ -1412,6 +1412,7 @@ const ALL_QUESTIONS = [
     options: ["Verdadero", "Falso"],
     correct: [1]
   },
+
   {
     id: 84, text: "¿Cuáles son los dos tipos de espectro ensanchado?",
     type: "multi",
@@ -1515,8 +1516,7 @@ const ALL_QUESTIONS = [
     id: 100, text: "Para poder desarrollar una infraestructura de red 5G, será necesario implementar:",
     type: "multi",
     options: ["Frecuencias muy altas (30 a 300 GHz)", "Subdivisión de celdas", "Celdas muy pequeñas (pico o nanoceldas)", "Comunicación Full dúplex", "Conformación de los haces de radio emitidos por las antenas", "Tecnologías de radiotransmisión por múltiples canales", "Ninguna es correcta", "Todas son correctas"],
-    correct: [7],
-    explanation: "Todas las opciones listadas son correctas para 5G."
+    correct: [0, 2, 3, 4, 5]
   },
   // === ORGANISMOS ===
   {
@@ -1655,6 +1655,12 @@ const ALL_QUESTIONS = [
     type: "text",
     correctText: ["60", "60 conectores", "60 conectores rj45"],
     correctDisplay: "60"
+  }  ,{
+    id: 999, text: "Empareje el material con el espacio que corresponde (según cable coaxial):",
+    type: "grid",
+    rows: ["Aislante", "hilo de acero galvanizado", "Núcleo solido de cobre", "funda de PVC semirrígido", "La malla de hilo trenzada", "recubrimiento de fibra sintética", "Una cubierta de esmalte de plastico"],
+    columns: ["ESPACIO 1", "ESPACIO 2", "ESPACIO 3", "ESPACIO 4", "NO CORRESPONDE"],
+    correct: [1, 4, 0, 4, 2, 4, 3]
   }
 ];
 
@@ -1949,6 +1955,9 @@ function renderQuestion() {
   } else if (q.type === 'multi' || (q.displayCorrect && q.displayCorrect.length > 1)) {
     badgeClass = 'badge-multi';
     badgeText = 'Selección múltiple';
+  } else if (q.type === 'grid') {
+    badgeClass = 'badge-multi';
+    badgeText = 'Emparejamiento (Grilla)';
   }
 
   // Clases visuales del card según estado
@@ -1994,6 +2003,47 @@ function renderQuestion() {
           autocomplete="off">
       </div>
     `;
+  } else if (q.type === 'grid') {
+    const selectedRows = userSelections[q.id] || [];
+    html += `<div style="overflow-x:auto; margin-top:15px; border-radius: 8px; border: 1px solid var(--border);">
+      <table style="width:100%; border-collapse: collapse; text-align:center; min-width: 600px;">
+        <thead>
+          <tr style="background: var(--bg-card-hover); border-bottom: 2px solid var(--border);">
+            <th style="padding:12px; text-align:left; border-right: 1px solid var(--border);">Elemento</th>
+            ${q.columns.map(c => `<th style="padding:12px; font-weight:600;">${c}</th>`).join('')}
+          </tr>
+        </thead>
+        <tbody>
+    `;
+    q.rows.forEach((r, rIdx) => {
+      let rowStyle = 'border-bottom: 1px solid var(--border);';
+      let rowBg = '';
+      if (isChecked) {
+        const isCorrectChoice = selectedRows[rIdx] === q.correct[rIdx];
+        if (selectedRows[rIdx] !== undefined) {
+           rowBg = isCorrectChoice ? 'background: var(--success-bg);' : 'background: var(--danger-bg);';
+        }
+      }
+      html += `<tr style="${rowStyle} ${rowBg}">
+        <td style="padding:12px; text-align:left; border-right: 1px solid var(--border);">${r}</td>
+        ${q.columns.map((c, cIdx) => {
+          const isSel = selectedRows[rIdx] === cIdx;
+          const isCorrectAns = q.correct[rIdx] === cIdx;
+          let extra = '';
+          if (isChecked && isCorrectAns) {
+             extra = '<br><span style="color:var(--success); font-weight:bold; font-size:12px;">✓</span>';
+          }
+          return `<td style="padding:12px;">
+            <input type="radio" name="q${q.id}_r${rIdx}" 
+              ${isSel ? 'checked' : ''} 
+              ${isChecked ? 'disabled' : ''} 
+              onchange="onGridChange(${q.id}, ${rIdx}, ${cIdx})">
+              ${extra}
+          </td>`;
+        }).join('')}
+      </tr>`;
+    });
+    html += `</tbody></table></div>`;
   } else {
     const isMulti = q.type === 'multi' || (q.displayCorrect && q.displayCorrect.length > 1);
     const inputType = isMulti ? 'checkbox' : 'radio';
@@ -2098,6 +2148,16 @@ function renderQuestion() {
   renderPalette();
 }
 
+
+function onGridChange(qId, rowIdx, colIdx) {
+  if (userChecked[qId]) return;
+  if (!userSelections[qId]) {
+    userSelections[qId] = [];
+  }
+  userSelections[qId][rowIdx] = colIdx;
+  renderQuestion();
+}
+
 function onOptionChange(qId, optIdx) {
   const q = currentQuestions.find(x => x.id === qId);
   if (!q) return;
@@ -2171,6 +2231,26 @@ function checkCurrentQuestion() {
     score = isCorrect ? 1.0 : 0.0;
     userChecked[q.id] = true;
     answers[q.id] = { entered, score, isCorrect, isPartial: false };
+  } else if (q.type === 'grid') {
+    const selected = userSelections[q.id] || [];
+    let answered = 0;
+    for (let i=0; i<q.rows.length; i++) {
+        if (selected[i] !== undefined) answered++;
+    }
+    if (answered < q.rows.length) {
+      alert('⚠️ Por favor responde a todas las filas antes de verificar.');
+      return;
+    }
+    let correctCount = 0;
+    q.correct.forEach((corrCol, rIdx) => {
+      if (selected[rIdx] === corrCol) correctCount++;
+    });
+    score = correctCount / q.rows.length;
+    isCorrect = score === 1.0;
+    isPartial = score > 0 && score < 1.0;
+    
+    userChecked[q.id] = true;
+    answers[q.id] = { selected, score, isCorrect, isPartial, correctSelectedCount: correctCount, totalCorrect: q.rows.length };
   } else {
     const selected = userSelections[q.id] || [];
     if (selected.length === 0) {
